@@ -26,7 +26,7 @@ def get_correlated_cols(local_df, **kwargs):
   return so[(so>lower_limit)&(so<upper_limit)]
 
   
-def PrepareForMl(local_df):
+def prepare_for_ml(local_df):
   ''' function to make dummy variables.
   gets a dataframe as input
   returns a dataframe with dummy variables (ready for ML training) 
@@ -46,3 +46,41 @@ def PrepareForMl(local_df):
         Data_local_Temp = pd.concat( [ Data_local_Temp , pd.DataFrame( X.toarray() , columns = colname ) ] , axis = 1 )
         Data_local_Temp = Data_local_Temp.drop([col] , axis = 1) 
     return Data_local_Temp
+
+  
+  
+  def print_info_cat(local_df):
+    #Print Informaton of categorical features 
+    local_df = local_df.replace('',np.nan)
+    Temp  = local_df.select_dtypes(include=['object'])
+    local_df = local_df.replace(np.nan,'NULL')
+    Categorical_cols = Temp.columns.tolist()
+    for col in Categorical_cols:
+        df = pd.value_counts(local_df[col].str.cat(sep=' ').split(),
+                             dropna =False).rename_axis(col).reset_index(name='Count')
+        try:
+            missing_no = float(df.loc[df[col]=='NULL','Count'])
+        except:
+            missing_no = 0
+        new=pd.DataFrame({col:'Total','Count':  [local_df.shape[0] - missing_no] } )
+        df = pd.concat([new,df],axis=0,ignore_index = True)
+        df['Percentage'] = df['Count']/local_df.shape[0]
+        df.loc[df[col]=='Total', 'No Missing'] = missing_no
+        df = df.drop(df[df[col]=='NULL'].index)
+        df.loc[0,'Missing%'] = missing_no/local_df.shape[0]*100
+        print(df)
+        
+        
+   def print_info_num(local_df):
+    #Print Informaton of numerical features 
+    datatolook = local_df.replace('',np.nan)
+    Categorical_Cols = local_df.select_dtypes(include=['object']).columns.tolist()
+    local_df = local_df.drop(Categorical_Cols,axis=1)
+    Numerical_Cols = local_df.columns.tolist()
+
+    for col in Numerical_Cols:
+        m = pd.DataFrame(local_df[col].describe()).T
+        m['No Missing'] = local_df.shape[0] - m['count']
+        m['Missing %'] = (local_df.shape[0] - m['count'])/local_df.shape[0]        
+        m = m[['count','50%','min','max','No Missing','Missing %']]
+        print(m)
