@@ -107,6 +107,64 @@ def plot_kmf_multivariate(durations, event_observed, factor, **kwargs):
   return ax
 
 
+def fit_coxPH(data, durations, event, **kwargs):
+  
+  # Get arguments
+  penalizer = kwargs.get(penalizer,0.1)
+  mask = np.random.rand(len(data)) < 0.8
+  train_test_mask = kwargs.get(train_test_mask, mask)
+  step_size = kwargs.get(step_size, 0.1)
+  scoring_method = kwargs.get(scoring_method, 'concordance_index')
+  file_name = kwargs.get(file_name, 'Cox_Results')
+  
+  # writer object
+  writer = pd.ExcelWriter(file_name + '.xlsx')
+  
+  # Concatenate data and survival and event columns
+  cph_data = pd.concat([data, durations.rename('survival_time'), event.rename('event')], axis=1)
+  
+  # create cox PH fitter object
+  cph = CoxPHFitter(penalizer = penalizer)
+  
+  # Separate train and test datasets
+  train = cph_data[train_test_mask]
+  test = cph_data[~train_test_mask]
+  
+  # fit
+  cph.fit(train, 'survival_time' ,event_col = 'event', step_size = step_size)
+  cph.fit(cph_data,'survival_time' ,event_col = 'event', step_size = step_size)
+  
+  print('************ C-statistic for train set: ', cph.score(train, scoring_method= scoring_method))
+  print('************ C-statistic for test set: ', cph.score(test, scoring_method= scoring_method))
+
+
+  cph.print_summary()
+
+  my_dict = {'duration_col':cph.duration_col,
+  'event_col': cph.event_col,
+  'penalizer': cph.penalizer ,
+  'l1_ratio': cph.l1_ratio,
+  'event_observed': cph.event_observed.sum(),
+  'log_likelihood': cph.log_likelihood_,
+  'concordance_index': cph.concordance_index_,
+  'partial AIC': cph.AIC_partial_,
+  'log_likelihood ratio test statistic': cph.log_likelihood_ratio_test().test_statistic,
+  'log_likelihood ratio test p-value': cph.log_likelihood_ratio_test().p_value}
+
+  Result_P1 = pd.DataFrame.from_dict(my_dict, orient='index', columns=['value'])
+
+  Result_P2 = cph.summary
+
+
+  Result_P1.to_excel(writer,'Sheet 1')
+  Result_P2.to_excel(writer, 'Sheet 1', startrow = len(Result_P1) + 2 )
+  writer.save()
+
+  plt.figure(figsize=(6,12))
+  cph.plot()
+  plt.savefig(file_name + '.png')
+  
+  return cph
 
 
 
