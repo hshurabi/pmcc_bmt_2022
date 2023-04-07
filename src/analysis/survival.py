@@ -2,6 +2,7 @@ from lifelines import AalenJohansenFitter
 from lifelines import NelsonAalenFitter
 from lifelines import KaplanMeierFitter
 from lifelines import CoxPHFitter
+import pandas as pd
 
 def plot_cumulative_function(data,event_col,survival_time_col, **kwargs):
   naf_m = NelsonAalenFitter()
@@ -28,8 +29,8 @@ def plot_cumulative_function(data,event_col,survival_time_col, **kwargs):
 
 
 def plot_kmf(durations, event_observed, **kwargs):
-  x_label = kwargs.get(x_label, 'Years after treatment') 
-  y_label = kwargs.get(y_label, 'Probability of survival')
+  xlabel = kwargs.get(xlabel, 'Years after treatment') 
+  ylabel = kwargs.get(ylabel, 'Probability of survival')
   outfile =  kwargs.get(outfile, 'kmf_plot.png')
   
   kmf = KaplanMeierFitter()
@@ -55,10 +56,57 @@ def plot_kmf(durations, event_observed, **kwargs):
            color='grey',
            linestyle='--') #exponential Greenwood 
   
-  plt.xlabel(x_label)
-  plt.ylabel(y_label)
+  plt.xlabel(xlabel)
+  plt.ylabel(ylabel)
   plt.legend(loc='upper right')
   plt.savefig(outfile)
   print('The median survival time is:', kmf.median_survival_time_)
   
   return kmf
+
+
+
+
+def plot_kmf_multivariate(durations, event_observed, factor, **kwargs):
+  '''
+  factor as series
+  '''
+  min_instances_for_km =  kwargs.get(min_instances_for_km, 100)
+  title = kwargs.get(title, 'Multivariate survival curves analysis')
+  xlabel = kwargs.get(xlabel, 'Years after treatment') 
+  ylabel = kwargs.get(ylabel, 'Probability of survival')
+  outfile =  kwargs.get(outfile, 'kmf_plot.png')
+  
+  
+  if not isinstance(factor, pd.Series):
+    raise TypeError
+    
+  # Select unique categiories (levels)
+  levels = factor.unique()
+
+  ax = plt.subplot(111)
+  # plt.style.use('seaborn')
+  kmf = KaplanMeierFitter()
+  for level in levels:
+      if factor.value_counts()[level]<min_instances_for_km:
+          continue
+
+      flag = factor == level
+
+      kmf.fit(durations[flag], 
+              event_observed=event_observed[flag], 
+              label = level)
+      
+      kmf.plot(ax=ax, ci_show=False)
+
+  plt.title(title)
+  plt.xlabel(xlabel)
+  plt.ylabel(ylabel)
+  plt.savefig(outfile)
+  
+  return ax
+
+
+
+
+
