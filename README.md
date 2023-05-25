@@ -1,4 +1,4 @@
-# Machine Learning for the prediction Bone Marrow Transplant survivals at the Princess Margaret Cancer Centre (PMCC)
+# Machine Learning for the prediction Bone Marrow Transplant survivals at Princess Margaret Cancer Centre (PMCC)
 This repository contains the code and scripts for the paper titled "Machine learning for the prediction of survival post-allogeneic hematopoietic cell transplantation: A single-center experience". 
 
 ## Folders
